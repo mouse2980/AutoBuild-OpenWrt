@@ -50,9 +50,9 @@ jobs:
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
-        echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
-        echo "src-git small https://github.com/kenzok8/small" >> ./feeds.conf.default
-        echo "src-git mouse2980 https://github.com/mouse2980/OpenWrt-package" >> ./feeds.conf.default
+        echo "src-git fw876 https://github.com/fw876/helloworld" >> ./feeds.conf.default
+        echo "src-git xiaorouji https://github.com/xiaorouji/openwrt-passwall-packages" >> ./feeds.conf.default
+        
         
     - name: Update & Install feeds
       working-directory: ./openwrt
@@ -60,14 +60,17 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         ./scripts/feeds install -a
-        ./scripts/feeds install dns2socks-rust
-        ./scripts/feeds install geoview
 
     #- name: Import external feeds - passwall
     #  working-directory: ./openwrt
     #  run: |
     #    git clone https://github.com/xiaorouji/openwrt-passwall.git package/lienol
-    #    git clone "your_github_link" package/"your_folder_name"      
+    #    git clone "your_github_link" package/"your_folder_name" 
+    #    echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
+    #    echo "src-git small https://github.com/kenzok8/small" >> ./feeds.conf.default
+    #    echo "src-git mouse2980 https://github.com/mouse2980/OpenWrt-package" >> ./feeds.conf.default
+    #    ./scripts/feeds install dns2socks-rust
+    #    ./scripts/feeds install geoview
 
     #- name: Import external feeds - JerryKuKu Argon
     #  working-directory: ./openwrt
