@@ -64,7 +64,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         git clone https://github.com/xiaorouji/openwrt-passwall2.git package/lienol
-        git clone https://github.com/mouse2980/passwall.git package/passwall2 
+        git clone https://github.com/mouse2980/passwall.git package/passwall2  
 
     
     #    echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
