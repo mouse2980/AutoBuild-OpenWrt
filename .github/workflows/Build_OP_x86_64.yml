@@ -1,4 +1,4 @@
-name: Build_OpenWrt_x86_64_Revised_v2
+name: Build_OpenWrt_x86_64_Geoview_Priority
 
 on:
   repository_dispatch:
@@ -48,52 +48,52 @@ jobs:
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         echo "OpenWrt source cloned."
 
-    - name: Manually add/override custom packages
+    - name: Manually add/override custom packages from OpenWrt-package repository
       # 此步骤在 AutoBuild-OpenWrt 仓库的根目录执行
       run: |
-        echo "Cloning mouse2980/OpenWrt-package repository for custom package definitions..."
-        git clone --depth 1 https://github.com/mouse2980/OpenWrt-package.git temp_custom_package_repo
+        echo "Cloning mouse2980/OpenWrt-package repository to a temporary directory..."
+        git clone --depth 1 https://github.com/mouse2980/OpenWrt-package.git temp_custom_package_files
         
         # --- 处理 geoview ---
         GEOVIEW_PKG_TARGET_DIR="openwrt/package/custom_packages/geoview"
-        GEOVIEW_SOURCE_MK_IN_REPO="temp_custom_package_repo/geoview_override.mk"
-        GEOVIEW_SOURCE_CONFIG_IN_REPO="temp_custom_package_repo/geoview_override.Config.in"
+        GEOVIEW_SOURCE_MK="temp_custom_package_files/geoview_override.mk"
+        GEOVIEW_SOURCE_CONFIG_IN="temp_custom_package_files/geoview_override.Config.in"
         echo "Creating custom package directory for geoview: ${GEOVIEW_PKG_TARGET_DIR}"
         mkdir -p "${GEOVIEW_PKG_TARGET_DIR}"
-        if [ -f "${GEOVIEW_SOURCE_MK_IN_REPO}" ] && [ -f "${GEOVIEW_SOURCE_CONFIG_IN_REPO}" ]; then
+        if [ -f "${GEOVIEW_SOURCE_MK}" ] && [ -f "${GEOVIEW_SOURCE_CONFIG_IN}" ]; then
           echo "Copying custom geoview Makefile and Config.in..."
-          cp "${GEOVIEW_SOURCE_MK_IN_REPO}" "${GEOVIEW_PKG_TARGET_DIR}/Makefile"
-          cp "${GEOVIEW_SOURCE_CONFIG_IN_REPO}" "${GEOVIEW_PKG_TARGET_DIR}/Config.in"
+          cp "${GEOVIEW_SOURCE_MK}" "${GEOVIEW_PKG_TARGET_DIR}/Makefile"
+          cp "${GEOVIEW_SOURCE_CONFIG_IN}" "${GEOVIEW_PKG_TARGET_DIR}/Config.in"
           echo "Custom geoview Makefile and Config.in successfully copied."
         else
-          echo "ERROR: Custom geoview override files (geoview_override.mk or geoview_override.Config.in) NOT found in the cloned temp_custom_package_repo."
+          echo "ERROR: Custom geoview override files (geoview_override.mk or geoview_override.Config.in) NOT found in the cloned temp_custom_package_files directory."
           echo "Please ensure these files exist (with these exact names) in the root of your https://github.com/mouse2980/OpenWrt-package.git repository."
-          ls -la temp_custom_package_repo/
+          ls -la temp_custom_package_files/
           # exit 1 # 如果 geoview 是必需的，可以在这里取消注释以中断构建
         fi
 
         # --- 处理 dns2socks-rust ---
         DNS2SOCKS_RUST_PKG_TARGET_DIR="openwrt/package/custom_packages/dns2socks-rust"
-        DNS2SOCKS_RUST_SOURCE_MK_IN_REPO="temp_custom_package_repo/dns2socks-rust_override.mk"
-        DNS2SOCKS_RUST_SOURCE_CONFIG_IN_REPO="temp_custom_package_repo/dns2socks-rust_override.Config.in"
+        DNS2SOCKS_RUST_SOURCE_MK="temp_custom_package_files/dns2socks-rust_override.mk"
+        DNS2SOCKS_RUST_SOURCE_CONFIG_IN="temp_custom_package_files/dns2socks-rust_override.Config.in"
         echo "Creating custom package directory for dns2socks-rust: ${DNS2SOCKS_RUST_PKG_TARGET_DIR}"
         mkdir -p "${DNS2SOCKS_RUST_PKG_TARGET_DIR}"
-        if [ -f "${DNS2SOCKS_RUST_SOURCE_MK_IN_REPO}" ]; then
+        if [ -f "${DNS2SOCKS_RUST_SOURCE_MK}" ]; then
           echo "Copying custom dns2socks-rust Makefile..."
-          cp "${DNS2SOCKS_RUST_SOURCE_MK_IN_REPO}" "${DNS2SOCKS_RUST_PKG_TARGET_DIR}/Makefile"
+          cp "${DNS2SOCKS_RUST_SOURCE_MK}" "${DNS2SOCKS_RUST_PKG_TARGET_DIR}/Makefile"
           echo "Custom dns2socks-rust Makefile successfully copied."
         else
-          echo "INFO: Custom dns2socks-rust_override.mk NOT found in temp_custom_package_repo. This package might not be available if selected in .config."
+          echo "INFO: Custom dns2socks-rust_override.mk NOT found in temp_custom_package_files. This package might not be available if selected."
         fi
-        if [ -f "${DNS2SOCKS_RUST_SOURCE_CONFIG_IN_REPO}" ]; then
-          cp "${DNS2SOCKS_RUST_SOURCE_CONFIG_IN_REPO}" "${DNS2SOCKS_RUST_PKG_TARGET_DIR}/Config.in"
+        if [ -f "${DNS2SOCKS_RUST_SOURCE_CONFIG_IN}" ]; then
+          cp "${DNS2SOCKS_RUST_SOURCE_CONFIG_IN}" "${DNS2SOCKS_RUST_PKG_TARGET_DIR}/Config.in"
           echo "Custom dns2socks-rust Config.in successfully copied."
         else
           echo "INFO: Custom dns2socks-rust_override.Config.in NOT found. Default Kconfig symbol registration will be used if Makefile is present."
         fi
         
         echo "Cleaning up temporary repository clone..."
-        rm -rf temp_custom_package_repo
+        rm -rf temp_custom_package_files
         echo "Manual package addition step finished."
 
     - name: Configure and Update OpenWrt Feeds
@@ -106,20 +106,21 @@ jobs:
         echo "Updating feeds..."
         ./scripts/feeds update -a
         
-        echo "Installing essential host tools from feeds (golang, rust)..."
-        # 尝试安装 golang 和 rust 包，以确保 golang/host 和 rust/host 编译依赖可用
-        # 使用 || true 避免在找不到这些包时直接使步骤失败 (coolsnowwolf/lede 可能已包含它们)
-        ./scripts/feeds install golang || echo "INFO: 'golang' package not found via feeds install, assuming provided by SDK or base."
-        ./scripts/feeds install rust || echo "INFO: 'rust' package not found via feeds install, assuming provided by SDK or base."
+        echo "Installing essential host tool dependencies from feeds (golang, rust)..."
+        # 尝试安装 golang 和 rust 包，这些包提供了 golang/host 和 rust/host 编译依赖
+        # coolsnowwolf/lede 的默认 feeds (如 packages) 中应该已包含这些
+        # 使用 || true 避免在找不到这些包的定义时直接使步骤失败 (因为它们可能已通过其他方式提供)
+        ./scripts/feeds install golang || echo "INFO: 'golang' package not found via feeds install. Ensure Go build tools are available if Go packages are selected in .config."
+        ./scripts/feeds install rust || echo "INFO: 'rust' package not found via feeds install. Ensure Rust build tools are available if Rust packages are selected in .config."
 
-        echo "Installing packages from custom feeds (kenzo, small)..."
-        # 注意：如果 kenzo 和 small feeds 非常大，全局 install -a 可能会消耗大量磁盘空间
-        # 并可能引入未预期的依赖问题。如果遇到磁盘空间问题，这是首先需要优化的地方。
-        # 可以改为只 install 你在 .config 中明确选择的、且来自这些 feeds 的包。
+        echo "Installing all package definitions from kenzo and small feeds..."
+        # 注意：如果 kenzo 和 small feeds 非常大，下面这两行 'install -a -p <feedname>' 
+        # 可能会消耗大量磁盘空间，并可能引入未预期的依赖问题。
+        # 如果再次遇到磁盘空间问题，应改为只 install 你在 .config 中明确选择的、且来自这些 feeds 的特定包。
         # 例如： ./scripts/feeds install -p small luci-app-ssr-plus
-        #        ./scripts/feeds install -p kenzo luci-app-argon-config
-        ./scripts/feeds install -a -p small
-        ./scripts/feeds install -a -p kenzo
+        #        ./scripts/feeds install -p kenzo luci-app-example
+        # 你手动添加在 'package/custom_packages/' 下的 geoview 和 dns2socks-rust 应该会优先于 feeds 中的版本。
+        ./scripts/feeds install -a 
         echo "Feeds update and install step finished."
 
     - name: Configuration Customization - Build_x86_64
@@ -127,19 +128,23 @@ jobs:
         CONFIG_FILE: 'x86_64.config' # 此文件应位于 AutoBuild-OpenWrt 仓库的根目录
       run: |
         echo "Starting configuration customization..."
-        # $CONFIG_FILE 和 customize.sh 假定位于 Actions checkout 出的仓库根目录
+        # 检查配置文件是否存在于仓库根目录 (Actions checkout 的顶层目录)
         if [ -e $CONFIG_FILE ]; then 
           echo "Moving $CONFIG_FILE to openwrt/.config"
-          mv $CONFIG_FILE openwrt/.config # 将仓库根目录的 x86_64.config 移到 openwrt 子目录并命名为 .config
+          mv $CONFIG_FILE openwrt/.config 
         else
-          echo "ERROR: $CONFIG_FILE not found in repository root. Make sure it's committed to the root of your AutoBuild-OpenWrt repository."
+          echo "ERROR: $CONFIG_FILE ($PWD/$CONFIG_FILE) not found. Make sure it's committed to the root of your AutoBuild-OpenWrt repository."
+          ls -la $PWD # 输出当前目录文件列表以帮助调试
           exit 1
         fi
         
-        if [ -f ./customize.sh ]; then # 检查仓库根目录的 customize.sh
+        # 检查并执行 customize.sh (如果存在于仓库根目录)
+        if [ -f ./customize.sh ]; then 
           echo "Running customize.sh script..."
           chmod +x ./customize.sh
-          ./customize.sh # 在仓库根目录执行 customize.sh
+          # customize.sh 脚本执行时，其当前目录是仓库根目录
+          # 如果它需要操作 openwrt 目录下的文件，脚本内部需要 cd openwrt
+          ./customize.sh 
         else
           echo "customize.sh not found in repository root, skipping."
         fi
@@ -148,13 +153,13 @@ jobs:
         cd openwrt
         rm -rf tmp # 清理 tmp 目录，确保配置干净
         make defconfig
-        echo "make defconfig finished. Check log for recursive dependency errors."
+        echo "make defconfig finished. Check this step's log for 'recursive dependency detected!' errors."
         
     - name: Download package sources
       working-directory: ./openwrt
       run: |
         echo "Downloading package sources..."
-        make download -j$(nproc) V=s # 添加 V=s 获取更详细输出
+        make download -j$(nproc) V=s
         echo "Cleaning up small/incomplete downloads..."
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -164,16 +169,15 @@ jobs:
       working-directory: ./openwrt
       run: |
         echo "Starting firmware build with $(nproc) threads."
-        make -j$(nproc) V=s # 使用 V=s 获取详细编译日志，方便排查问题
+        make -j$(nproc) V=s
         echo "Firmware build finished."
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
-      if: success() || failure() # 无论成功失败都上传，方便排查
+      if: success() || failure() 
       with:
         name: OpenWrt_x86_64_firmware-${{ github.run_id }}-${{ github.run_attempt }}
         path: |
           openwrt/bin/targets/
           openwrt/.config
-          # openwrt/logs/ # (如果存在)
         retention-days: 7
