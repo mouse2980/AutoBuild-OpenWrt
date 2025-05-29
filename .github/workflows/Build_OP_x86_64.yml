@@ -58,8 +58,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
-        ./scripts/feeds install -a
-        ./scripts/feeds install -a
+        ./scripts/feeds install -a -p xiaorouji
 
     #- name: Import external feeds - passwall
     #  working-directory: ./openwrt
