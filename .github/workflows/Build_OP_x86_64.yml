@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout main repository
-      uses: actions/checkout@master # 建议使用具体版本号替换 master
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4 # 建议使用具体版本号替换 master
 
     - name: Initialization environment
       env:
