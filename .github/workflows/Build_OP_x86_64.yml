@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout main repository
-      uses: actions/checkout@v3 # 建议使用具体版本号替换 master
+      uses: actions/checkout@master # 建议使用具体版本号替换 master
 
     - name: Initialization environment
       env:
