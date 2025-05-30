@@ -116,6 +116,35 @@ jobs:
         echo -e "$(nproc) thread build."
         make -j$(nproc) V=s
 
+    - name: Disk Space and Large Directory Report
+      if: always() # 保证无论上一步成功或失败，此步骤都会运行
+      # 此步骤的默认工作目录是仓库的根目录 (actions/checkout 检出的地方)
+      run: |
+        echo "================================================================="
+        echo "DISK SPACE USAGE REPORT (after 'Build firmware' attempt):"
+        echo "================================================================="
+        df -h
+        echo "-----------------------------------------------------------------"
+        echo "TOP 20 LARGEST ITEMS IN ./openwrt/build_dir/ (if it exists):"
+        echo "-----------------------------------------------------------------"
+        # du 命令显示目录大小，sort -rh 按大小逆序排序，head -n 20 显示前20个
+        # 使用 || echo "..." 来避免在目录不存在或为空时报错中断
+        du -sh openwrt/build_dir/* 2>/dev/null | sort -rh | head -n 20 || echo "Could not list openwrt/build_dir or it is empty."
+        echo "-----------------------------------------------------------------"
+        echo "TOTAL SIZE OF KEY DIRECTORIES INSIDE ./openwrt:"
+        echo "-----------------------------------------------------------------"
+        du -sh openwrt/dl || echo "openwrt/dl not found or empty."
+        du -sh openwrt/build_dir || echo "openwrt/build_dir not found or empty."
+        du -sh openwrt/bin || echo "openwrt/bin not found or empty."
+        du -sh openwrt/staging_dir || echo "openwrt/staging_dir not found or empty."
+        du -sh openwrt/feeds || echo "openwrt/feeds not found or empty."
+        echo "-----------------------------------------------------------------"
+        echo "OVERALL SIZE OF ./openwrt DIRECTORY:"
+        echo "-----------------------------------------------------------------"
+        du -sh openwrt || echo "openwrt directory not found."
+        echo "================================================================="
+        echo "DISK SPACE REPORT FINISHED."
+
     - name : Upload artifact
       uses: actions/upload-artifact@master
       with:
