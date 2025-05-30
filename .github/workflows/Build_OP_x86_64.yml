@@ -55,14 +55,14 @@ jobs:
         cd openwrt
         echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
         echo "src-git pw2 https://github.com/xiaorouji/openwrt-passwall-packages" >> ./feeds.conf.default
-        
+        echo "src-git small https://github.com/kenzok8/small" >> ./feeds.conf.default
         
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
+        ./scripts/feeds install luci-app-ssr-plus -p small
+        ./scripts/feeds install luci-app-passwall2 -p pw2
     #- name: Import external feeds - passwall
     #  working-directory: ./openwrt
     #  run: |
@@ -75,11 +75,6 @@ jobs:
     #    echo "src-git mouse2980 https://github.com/mouse2980/OpenWrt-package" >> ./feeds.conf.default
     #    ./scripts/feeds install dns2socks-rust
     #    ./scripts/feeds install geoview
-
-    - name: Import external feeds - srrp
-      working-directory: ./openwrt
-      run: |
-        git clone --depth=1 https://github.com/fw876/helloworld.git package/helloworld
 
     #- name: Import external feeds - JerryKuKu Argon
     #  working-directory: ./openwrt
@@ -100,15 +95,6 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: Check disk space and large directories after build step
-      run: |
-        echo "Current disk usage:"
-        df -h
-        echo "Top 10 largest directories in openwrt/build_dir:"
-        du -sh openwrt/build_dir/* | sort -rh | head -n 10
-        echo "Size of openwrt/dl:"
-        du -sh openwrt/dl    
 
     - name: Build firmware
       working-directory: ./openwrt
