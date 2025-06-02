@@ -55,13 +55,15 @@ jobs:
         cd openwrt
          echo "src-git kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
          echo "src-git small https://github.com/kenzok8/small" >> ./feeds.conf.default
-        
+         echo "src-git mouse2980 https://github.com/mouse2980/dns2socks-rust" >> ./feeds.conf.default
         
     - name: Update & Install feeds
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
         rm -rf feeds/packages/net/geoview
+        rm -rf feeds/packages/small/nikki
+        rm -rf feeds/packages/luci-app-fchomo
         ./scripts/feeds install -a 
 
         
