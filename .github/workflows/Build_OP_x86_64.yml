@@ -63,7 +63,7 @@ jobs:
         ./scripts/feeds update -a
         rm -rf feeds/packages/net/geoview
         rm -rf feeds/packages/small/nikki
-        rm -rf feeds/packages/luci-app-fchomo
+        rm -rf feeds/packages/small/luci-app-fchomo
         ./scripts/feeds install -a 
 
         
