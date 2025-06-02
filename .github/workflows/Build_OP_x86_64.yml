@@ -61,6 +61,7 @@ jobs:
       working-directory: ./openwrt
       run: |
         ./scripts/feeds update -a
+        rm -rf feeds/packages/net/geoview
         ./scripts/feeds install -a 
 
         
